@@ -6,7 +6,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import hashlib
-import operator
 
 from bs4 import BeautifulSoup
 from six.moves import http_cookiejar, urllib
@@ -14,7 +13,7 @@ from six.moves.urllib.request import build_opener, HTTPCookieProcessor
 
 
 class usereg:
-    BASEURL = 'http://usereg.tsinghua.edu.cn/'
+    BASEURL = 'https://usereg.tsinghua.edu.cn/'
 
     def __init__(self, jar):
         self._opener = build_opener(HTTPCookieProcessor(jar))
@@ -31,8 +30,19 @@ class usereg:
                 user_password=hashlib.md5(password.encode()).hexdigest(),
             )
         )
+        assert 200 == request.code
         content = request.read().decode('gb2312', 'ignore')
         assert 'ok' == content, 'password incorrect'
+
+    def logout(self):
+        request = self._open(usereg.BASEURL + 'do.php', dict(
+                action='logout',
+            )
+        )
+        assert 200 == request.code
+        content = request.read().decode('gb2312', 'ignore')
+        print(content)
+        assert 'ok' == content
 
     def checklogin(self):
         request = self._open(usereg.BASEURL + 'main.php')
@@ -59,21 +69,38 @@ class usereg:
             '可用余额 用户状态'.split()
         }
 
-    def online_user_ipv4(self):
-        request = self._open(usereg.BASEURL + 'online_user_ipv4.php')
+    def _online_user(self, portal):
+        request = self._open(usereg.BASEURL + portal)
         assert 200 == request.code
         content = request.read().decode('gb2312')
         soup = BeautifulSoup(content, 'html.parser')
         trs = [
             [
                 td.get_text().replace('\xa0', ' ').strip()
+                if td.find('input') is None else td.find('input').get('value')
                 for td in tr.find_all('td')
             ] for tr in soup.find_all('tr', {'align': 'center'})
         ]
+        trs[0][0] = 'id'
         return [
-            dict(filter(operator.itemgetter(0), zip(trs[0], td)))
-            for td in trs[1:]
+            dict(zip(trs[0], td)) for td in trs[1:]
         ]
+
+    def _drops(self, protal, ip):
+        ls = self._online_user(protal)
+        ls = [o for o in ls if o.get('IP') == ip]
+        assert 1 <= len(ls), 'IP not in online list'
+        request = self._open(usereg.BASEURL + protal, dict(
+                action='drops',
+                user_ip=ls[0].get('id', ''),
+            )
+        )
+        assert 200 == request.code
+        content = request.read().decode('gb2312')
+        assert '下线请求已发送' in content, content
+
+    def online_user_ipv4(self):
+        return self._online_user('online_user_ipv4.php')
 
     def ip_login(self, ip):
         request = self._open(usereg.BASEURL + 'ip_login.php', dict(
@@ -89,6 +116,9 @@ class usereg:
         content = request.read().decode('gb2312')
         assert '上线请求已发送' in content, content
 
+    def drops(self, ip):
+        return self._drops('online_user_ipv4.php', ip)
+
     def modify_online_num(self, num):
         request = self._open(usereg.BASEURL + 'modify_online_num.php', dict(
                 action='mod',
@@ -98,3 +128,9 @@ class usereg:
         assert 200 == request.code
         content = request.read().decode('gb2312')
         assert '联网数已修改' in content, content
+
+    def import_online_user(self):
+        return self._online_user('import_online_user.php')
+
+    def drops_import(self, ip):
+        return self._drops('import_online_user.php', ip)

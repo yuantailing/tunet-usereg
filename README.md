@@ -25,6 +25,10 @@ pprint(agent.online_user_ipv4())         # 打印在线列表
 
   登录失败抛出异常，登录成功返回 None
 
+- logout
+
+  登出。无论原来是否在线都会返回 None
+
 - checklogin
 
   已登录返回 {'error': 0}，未登录返回 {'error': 1}
@@ -43,12 +47,26 @@ pprint(agent.online_user_ipv4())         # 打印在线列表
 
   远程登录其它 IP
 
+- drops `<ip: str>`
+
+  远程下线指定 IP。IP 必须在在线列表里，否则抛出异常
+
 - modify_online_num `<num: int>`
 
   修改联网数。联网数只能是 1、2 或 3
 
+- import_online_user
+
+  返回准入在线列表，即字典的列表
+
+- drops_import `<ip: str>`
+
+  准入下线。IP 必须在准入在线列表里，否则抛出异常
+
 ## todo
-- [ ] 远程下线
+- [x] 远程下线
 - [ ] 准入代认证
-- [ ] 准入在线
+- [x] 准入在线
+- [x] 准入下线
 - [ ] 上网明细
+- [ ] 准入上网明细
