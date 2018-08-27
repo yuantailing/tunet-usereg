@@ -17,15 +17,15 @@ class usereg:
     BASEURL = 'http://usereg.tsinghua.edu.cn/'
 
     def __init__(self, jar):
-        self.opener = build_opener(HTTPCookieProcessor(jar))
+        self._opener = build_opener(HTTPCookieProcessor(jar))
 
-    def open(self, fullurl, data=None):
+    def _open(self, fullurl, data=None):
         if data is None:
-            return self.opener.open(fullurl)
-        return self.opener.open(fullurl, urllib.parse.urlencode(data).encode())
+            return self._opener.open(fullurl)
+        return self._opener.open(fullurl, urllib.parse.urlencode(data).encode())
 
     def login(self, username, password):
-        request = self.open(usereg.BASEURL + 'do.php', dict(
+        request = self._open(usereg.BASEURL + 'do.php', dict(
                 action='login',
                 user_login_name=username.encode(),
                 user_password=hashlib.md5(password.encode()).hexdigest(),
@@ -35,14 +35,14 @@ class usereg:
         assert 'ok' == content, 'password incorrect'
 
     def checklogin(self):
-        request = self.open(usereg.BASEURL + 'main.php')
+        request = self._open(usereg.BASEURL + 'main.php')
         assert 200 == request.code
         return dict(
             error=0 if request.url.endswith('main.php') else 1,
         )
 
     def user_info(self):
-        request = self.open(usereg.BASEURL + 'user_info.php')
+        request = self._open(usereg.BASEURL + 'user_info.php')
         assert 200 == request.code
         content = request.read().decode('gb2312')
         soup = BeautifulSoup(content, 'html.parser')
@@ -59,32 +59,8 @@ class usereg:
             '可用余额 用户状态'.split()
         }
 
-    def modify_online_num(self, num):
-        request = self.open(usereg.BASEURL + 'modify_online_num.php', dict(
-                action='mod',
-                user_max_online_num='{:d}'.format(num),
-            )
-        )
-        assert 200 == request.code
-        content = request.read().decode('gb2312')
-        assert '联网数已修改' in content, content
-
-    def ip_login(self, ip):
-        request = self.open(usereg.BASEURL + 'ip_login.php', dict(
-                n='100',
-                is_pad='1',
-                type='10',
-                action='do_login',
-                user_ip=ip,
-                drop='0',
-            )
-        )
-        assert 200 == request.code
-        content = request.read().decode('gb2312')
-        assert '上线请求已发送' in content, content
-
     def online_user_ipv4(self):
-        request = self.open(usereg.BASEURL + 'online_user_ipv4.php')
+        request = self._open(usereg.BASEURL + 'online_user_ipv4.php')
         assert 200 == request.code
         content = request.read().decode('gb2312')
         soup = BeautifulSoup(content, 'html.parser')
@@ -98,3 +74,27 @@ class usereg:
             dict(filter(operator.itemgetter(0), zip(trs[0], td)))
             for td in trs[1:]
         ]
+
+    def ip_login(self, ip):
+        request = self._open(usereg.BASEURL + 'ip_login.php', dict(
+                n='100',
+                is_pad='1',
+                type='10',
+                action='do_login',
+                user_ip=ip,
+                drop='0',
+            )
+        )
+        assert 200 == request.code
+        content = request.read().decode('gb2312')
+        assert '上线请求已发送' in content, content
+
+    def modify_online_num(self, num):
+        request = self._open(usereg.BASEURL + 'modify_online_num.php', dict(
+                action='mod',
+                user_max_online_num='{:d}'.format(num),
+            )
+        )
+        assert 200 == request.code
+        content = request.read().decode('gb2312')
+        assert '联网数已修改' in content, content
