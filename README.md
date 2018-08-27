@@ -17,7 +17,7 @@ pprint(agent.user_info())                # 打印用户信息
 pprint(agent.online_user_ipv4())         # 打印在线列表
 ```
 
-需要保存 cookie 以免每次都要登录？参考 [test.py](test.py)。
+避免每次都要重新登录？需要保存 cookie，参考 [test.py](test.py)。
 
 ## api
 
@@ -28,6 +28,8 @@ pprint(agent.online_user_ipv4())         # 打印在线列表
 - checklogin
 
   已登录返回 {'error': 0}，未登录返回 {'error': 1}
+  
+  *注：以下 API 只能在已登录状态下调用，否则抛出异常*
 
 - user_info
 
